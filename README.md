@@ -31,9 +31,9 @@ npx http-server -p 8080
 - **No Scrolling**: Everything visible at once for direct comparison
 
 ### Mobile Experience (<768px)
-- **Vertical Layout**: Each tracker occupies full screen height
-- **Scroll to Switch**: Swipe down to transition between trackers
-- **Full Functionality**: Both trackers remain fully interactive
+- **Button Selection Menu**: Choose your preferred tracker with simple buttons
+- **EmotionDriven or FunctionDriven**: Tap a button to open that tracker
+- **Clean Navigation**: Dedicated full-screen experience for each tracker
 
 ## 📁 Project Structure
 
