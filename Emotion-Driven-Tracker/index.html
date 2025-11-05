@@ -32,6 +32,30 @@
             padding: 20px 30px 30px 30px;
         }
 
+        /* --- NEW: Header Controls --- */
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* --- NEW: Reset Button Style --- */
+        #reset-plant-btn {
+            font-size: 28px;
+            background: none;
+            border: 2px solid #D2B48C;
+            color: #3A5A40;
+            padding: 0px 8px 4px 8px; /* Fine-tune padding for emoji */
+            line-height: 1;
+            transition: background-color 0.2s;
+        }
+        
+        #reset-plant-btn:hover {
+            background-color: #F5EFE6;
+            opacity: 1; /* Override default button hover */
+        }
+
         h1, h2 {
             color: #8B4513; /* Brown Accent */
             text-align: center;
@@ -40,7 +64,9 @@
 
         h1 {
             font-size: 42px;
+            /* --- MODIFIED: Margins handled by .header-controls --- */
             margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         h2 {
@@ -244,7 +270,12 @@
 <body>
 
     <div class="container">
-        <h1>A Place to Grow</h1>
+        
+        <div class="header-controls">
+            <h1>A Place to Grow</h1>
+            <button id="reset-plant-btn" title="Reset Plant Growth">🔄</button>
+        </div>
+        
         <p>Gently nurture your intentions.</p>
 
         <svg id="plant-svg" width="200" height="200" viewBox="0 0 100 100" shape-rendering="crispEdges">
@@ -300,6 +331,7 @@
         const modalIntentionId = document.getElementById('modal-intention-id'); 
         const insightsContainer = document.getElementById('insights-container'); 
         const insightsText = document.getElementById('insights-text'); 
+        const resetPlantBtn = document.getElementById('reset-plant-btn'); // <-- NEW
 
         // --- State Variables ---
         let intentions = [];
@@ -328,9 +360,6 @@
 
         /**
          * Loads all data from localStorage on page load.
-         * --- MODIFIED ---
-         * This now adds empty 'moods' and 'missedDays' arrays to the
-         * loaded intentions, ensuring logs are fresh on every load.
          */
         function loadData() {
             const savedIntentions = localStorage.getItem(INTENTIONS_KEY);
@@ -349,12 +378,20 @@
                         missedDays: [] // <-- Initialize as empty
                     };
                 });
+            } else {
+                 intentions = []; // Ensure it's empty if nothing is saved
             }
+            
             if (savedPlant) {
                 plantGrowth = parseInt(savedPlant, 10);
+            } else {
+                plantGrowth = 0; // Ensure it's 0 if nothing is saved
             }
+            
             if (savedJournal) {
                 reflectionJournal.value = savedJournal;
+            } else {
+                reflectionJournal.value = ''; // Ensure it's empty
             }
 
             renderIntentions();
@@ -364,9 +401,6 @@
 
         /**
          * Saves all current state data to localStorage.
-         * --- MODIFIED ---
-         * This now saves a "clean" version of intentions,
-         * stripping out 'moods' and 'missedDays' before saving.
          */
         function saveData() {
             // Create a "clean" version for saving, omitting transient data
@@ -537,6 +571,18 @@
             renderInsights(); 
             saveData(); // Saves the updated intentions list
         }
+
+        /**
+         * --- NEW FUNCTION ---
+         * Resets the plant growth to 0 and reloads the app state.
+         */
+        function resetPlant() {
+            if (confirm('Are you sure you want to reset your plant growth and clear today\'s logs?')) {
+                plantGrowth = 0;
+                saveData(); // Save the reset plant (and current intentions/journal)
+                loadData(); // Reload all data (this clears session logs and renders '0' plant)
+            }
+        }
         
         /**
          * Handles the "I made time for this" click.
@@ -609,6 +655,7 @@
         
         document.addEventListener('DOMContentLoaded', loadData);
         addIntentionBtn.addEventListener('click', addIntention);
+        resetPlantBtn.addEventListener('click', resetPlant); // <-- NEW
 
         intentionInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
