@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function-Driven Habit Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* 1. FONT & BASE STYLES */
+        :root {
+            --color-green: #00FF00;
+            --color-red: #FF0000;
+            --color-black: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: var(--color-black);
+            color: var(--color-green);
+            margin: 0;
+            padding: 20px;
+            font-size: 18px;
+        }
+
+        /* 2. LAYOUT & CONTAINER */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid var(--color-green);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px var(--color-green);
+        }
+
+        /* 3. INPUT AREA */
+        .input-area {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        #habit-input, #add-habit-btn {
+            font-family: 'VT323', monospace;
+            background: var(--color-black);
+            border: 2px solid var(--color-green);
+            color: var(--color-green);
+            padding: 10px;
+            font-size: 1.5rem;
+            border-radius: 0; /* Sharp corners */
+        }
+
+        #habit-input::placeholder {
+            color: var(--color-green);
+            opacity: 0.6;
+        }
+
+        #add-habit-btn {
+            cursor: pointer;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        #add-habit-btn:hover, #add-habit-btn:focus {
+            background: var(--color-green);
+            color: var(--color-black);
+            outline: none;
+        }
+
+        /* 4. HABIT LIST */
+        #habit-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .habit-item {
+            border: 2px solid var(--color-green);
+            padding: 15px;
+            display: grid;
+            /* Grid template for responsive alignment */
+            grid-template-areas:
+                "name streak"
+                "grid grid"
+                "failure failure";
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .habit-name {
+            grid-area: name;
+            font-size: 2rem;
+            word-break: break-all;
+        }
+
+        .streak-counter {
+            grid-area: streak;
+            font-size: 1.5rem;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .week-grid {
+            grid-area: grid;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .failure-message {
+            grid-area: failure;
+            color: var(--color-red);
+            font-size: 1.8rem;
+            text-align: center;
+            display: none; /* Hidden by default */
+            text-shadow: 0 0 5px var(--color-red);
+        }
+
+        /* 5. CUSTOM CHECKBOX */
+        input[type="checkbox"] {
+            /* Hide default checkbox */
+            appearance: none;
+            -webkit-appearance: none;
+            
+            /* Box styles */
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Makes it a perfect square */
+            min-width: 30px;
+            background: var(--color-black);
+            border: 2px solid var(--color-green);
+            border-radius: 0; /* Sharp corners */
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Checked State */
+        input[type="checkbox"]:checked {
+            background: var(--color-green);
+            border-color: var(--color-green);
+        }
+
+        /* Failed State */
+        input[type="checkbox"].failed {
+            border-color: var(--color-red);
+            background: var(--color-black);
+        }
+
+        /* Failed State 'X' - using pseudo-elements */
+        input[type="checkbox"].failed::before,
+        input[type="checkbox"].failed::after {
+            content: '';
+            position: absolute;
+            background: var(--color-red);
+            width: 80%;
+            height: 3px;
+            /* Center the 'X' */
+            top: 50%;
+            left: 10%;
+            transform-origin: center;
+        }
+
+        input[type="checkbox"].failed::before {
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        input[type="checkbox"].failed::after {
+            transform: translateY(-50%) rotate(-45deg);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>[ SCOREBOARD: COMPLIANCE ]</h1>
+
+        <div class="input-area">
+            <input type="text" id="habit-input" placeholder="DEFINE NEW HABIT...">
+            <button id="add-habit-btn">ADD</button>
+        </div>
+
+        <div id="habit-list">
+            </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const habitInput = document.getElementById('habit-input');
+            const addHabitBtn = document.getElementById('add-habit-btn');
+            const habitList = document.getElementById('habit-list');
+            
+            const STORAGE_KEY = 'functionDrivenHabits';
+
+            let habits = [];
+
+            /**
+             * Loads habits from localStorage.
+             */
+            function loadHabits() {
+                const habitsJson = localStorage.getItem(STORAGE_KEY);
+                habits = habitsJson ? JSON.parse(habitsJson) : [];
+            }
+
+            /**
+             * Saves the current habits array to localStorage.
+             */
+            function saveHabits() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+            }
+
+            /**
+             * Renders the entire list of habits to the DOM.
+             */
+            function renderHabits() {
+                habitList.innerHTML = ''; // Clear the list
+
+                habits.forEach(habit => {
+                    // 1. Create habit-item container
+                    const habitItem = document.createElement('div');
+                    habitItem.className = 'habit-item';
+                    habitItem.dataset.habitId = habit.id;
+
+                    // 2. Create habit name
+                    const habitName = document.createElement('span');
+                    habitName.className = 'habit-name';
+                    habitName.textContent = habit.name;
+                    habitItem.appendChild(habitName);
+
+                    // 3. Create streak counter
+                    const streakCounter = document.createElement('div');
+                    streakCounter.className = 'streak-counter';
+                    streakCounter.innerHTML = `STREAK: <span class="streak-value">${habit.streak}</span> DAYS`;
+                    habitItem.appendChild(streakCounter);
+
+                    // 4. Create week grid
+                    const weekGrid = document.createElement('div');
+                    weekGrid.className = 'week-grid';
+                    
+                    for (let i = 0; i < 7; i++) {
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'day-check';
+                        checkbox.dataset.dayIndex = i;
+                        
+                        // Set checked state from saved data
+                        checkbox.checked = habit.checks[i];
+                        
+                        // Set failed state from saved data
+                        if (habit.failed[i]) {
+                            checkbox.classList.add('failed');
+                        }
+                        
+                        weekGrid.appendChild(checkbox);
+                    }
+                    habitItem.appendChild(weekGrid);
+
+                    // 5. Create failure message
+                    const failureMessage = document.createElement('div');
+                    failureMessage.className = 'failure-message';
+                    failureMessage.textContent = 'STREAK BROKEN';
+                    
+                    // Show failure message if streak is 0 AND any box has ever been marked as failed
+                    if (habit.streak === 0 && habit.failed.some(f => f === true)) {
+                        failureMessage.style.display = 'block';
+                    }
+                    habitItem.appendChild(failureMessage);
+
+                    // 6. Add the complete item to the list
+                    habitList.appendChild(habitItem);
+                });
+            }
+
+            /**
+             * Handles adding a new habit.
+             */
+            function addHabit() {
+                const habitName = habitInput.value.trim().toUpperCase(); // Strict, all caps
+                if (habitName === '') return;
+
+                const newHabit = {
+                    id: Date.now().toString(),
+                    name: habitName,
+                    streak: 0,
+                    checks: Array(7).fill(false), // 7 days, all unchecked
+                    failed: Array(7).fill(false)  // 7 days, no failures
+                };
+
+                habits.push(newHabit);
+                habitInput.value = ''; // Clear input
+                
+                saveHabits();
+                renderHabits();
+            }
+
+            /**
+             * Handles the logic when a checkbox is clicked.
+             */
+            function handleCheckboxChange(e) {
+                // Ensure we only act on our checkboxes
+                if (!e.target.matches('.day-check')) return;
+
+                const checkbox = e.target;
+                const habitItem = checkbox.closest('.habit-item');
+                const habitId = habitItem.dataset.habitId;
+                const dayIndex = parseInt(checkbox.dataset.dayIndex);
+                
+                const habit = habits.find(h => h.id === habitId);
+                if (!habit) return;
+
+                const isChecked = checkbox.checked;
+                const wasChecked = habit.checks[dayIndex]; // The state *before* this click
+
+                // Update the check state
+                habit.checks[dayIndex] = isChecked;
+
+                if (isChecked && !wasChecked) {
+                    // ---- POSITIVE: User checked a box ----
+                    habit.streak += 1;
+                    habit.failed[dayIndex] = false; // No longer failed
+
+                    // If this is the first success after a failure, reset all other 'failed' flags
+                    if (habit.streak === 1) {
+                        habit.failed.fill(false);
+                    }
+
+                } else if (!isChecked && wasChecked) {
+                    // ---- FAILURE: User unchecked a box ----
+                    habit.streak = 0; // IMMEDIATE RESET
+                    habit.failed[dayIndex] = true; // Mark this specific box as failed
+                }
+                
+                // Save and re-render the UI to reflect changes
+                saveHabits();
+                renderHabits();
+            }
+
+            // --- Event Listeners ---
+            addHabitBtn.addEventListener('click', addHabit);
+            habitInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addHabit();
+                }
+            });
+
+            // Listen for changes on the entire list (event delegation)
+            habitList.addEventListener('change', handleCheckboxChange);
+
+            // --- Initial Load ---
+            loadHabits();
+            renderHabits();
+        });
+    </script>
+
+</body>
+</html>

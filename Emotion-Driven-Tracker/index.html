@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Place to Grow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- Base & Typography --- */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #F5EFE6; /* Soft Beige */
+            color: #3A5A40; /* Forest Green */
+            font-size: 22px; /* VT323 is small, so we make it larger */
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FDFBF5; /* Lighter beige for the "page" */
+            border: 2px solid #D2B48C; /* Tan/Brown accent */
+            padding: 20px 30px 30px 30px;
+        }
+
+        h1, h2 {
+            color: #8B4513; /* Brown Accent */
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-top: 10px;
+        }
+
+        h2 {
+            font-size: 32px;
+            margin-top: 40px;
+        }
+
+        p {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* --- Plant SVG --- */
+        #plant-svg {
+            display: block;
+            margin: 20px auto;
+            /* Enforce pixelated rendering */
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* --- Forms & Inputs --- */
+        .intention-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #intention-input {
+            flex-grow: 1;
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            padding: 10px;
+            background-color: #F5EFE6;
+            border: 2px solid #D2B48C;
+            color: #3A5A40;
+        }
+
+        /* --- Buttons --- */
+        button {
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            background-color: #3A5A40; /* Forest Green */
+            color: #F5EFE6; /* Beige Text */
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        /* --- Intentions List --- */
+        .intention-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 2px dashed #D2B48C;
+        }
+
+        .intention-item span {
+            padding-right: 15px;
+            word-break: break-word;
+        }
+
+        .intention-item .controls {
+            display: flex;
+            flex-shrink: 0;
+            gap: 10px;
+        }
+
+        .intention-item .grow-btn {
+            background-color: #8B4513; /* Brown */
+            font-size: 18px;
+            padding: 5px 10px;
+        }
+
+        .intention-item .remove-btn {
+            background-color: #A0522D; /* Lighter Brown */
+            font-size: 18px;
+            padding: 5px 12px;
+        }
+
+        /* --- Journal Text Area --- */
+        #reflection-journal {
+            width: 100%;
+            height: 150px;
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            padding: 10px;
+            background-color: #F5EFE6;
+            border: 2px solid #D2B48C;
+            color: #3A5A40;
+            resize: vertical;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>A Place to Grow</h1>
+        <p>Gently nurture your intentions.</p>
+
+        <svg id="plant-svg" width="200" height="200" viewBox="0 0 100 100" shape-rendering="crispEdges">
+            <rect x="30" y="80" width="40" height="20" fill="#8B4513" />
+            <rect x="34" y="84" width="32" height="12" fill="#A0522D" />
+            
+            <rect x="48" y="40" width="4" height="40" fill="#3A5A40" />
+
+            <g id="plant-growth"></g>
+        </svg>
+
+        <div class="intention-form">
+            <input type="text" id="intention-input" placeholder="A new intention...">
+            <button id="add-intention-btn">Add an Intention</button>
+        </div>
+
+        <div id="intentions-list">
+            </div>
+
+        <h2>Daily Reflection</h2>
+        <textarea id="reflection-journal" placeholder="How do you feel today? What's on your mind?"></textarea>
+
+    </div>
+
+    <script>
+        // --- DOM Selectors ---
+        const intentionInput = document.getElementById('intention-input');
+        const addIntentionBtn = document.getElementById('add-intention-btn');
+        const intentionsList = document.getElementById('intentions-list');
+        const plantGrowthContainer = document.getElementById('plant-growth');
+        const reflectionJournal = document.getElementById('reflection-journal');
+
+        // --- State Variables ---
+        let intentions = [];
+        let plantGrowth = 0;
+
+        // --- localStorage Keys ---
+        const INTENTIONS_KEY = 'growthJournalIntentions';
+        const PLANT_KEY = 'growthJournalPlantState';
+        const JOURNAL_KEY = 'growthJournalReflection';
+
+        // --- Pixel Art Definitions for Growth ---
+        // Each item is an SVG string for a <rect> element (a leaf or branch)
+        // This array defines the sequence of growth.
+        const growthStages = [
+            '<rect x="52" y="72" width="12" height="4" fill="#3A5A40" />', // 1
+            '<rect x="36" y="66" width="12" height="4" fill="#3A5A40" />', // 2
+            '<rect x="52" y="60" width="12" height="4" fill="#3A5A40" />', // 3
+            '<rect x="36" y="54" width="12" height="4" fill="#3A5A40" />', // 4
+            '<rect x="52" y="48" width="12" height="4" fill="#3A5A40" />', // 5
+            '<rect x="48" y="36" width="4" height="4" fill="#3A5A40" />',  // 6 (Top piece)
+            '<rect x="52" y="32" width="8" height="4" fill="#556B2F" />',   // 7 (Flower part 1)
+            '<rect x="40" y="32" width="8" height="4" fill="#556B2F" />',   // 8 (Flower part 2)
+            '<rect x="46" y="28" width="8" height="4" fill="#556B2F" />',   // 9 (Flower part 3)
+            '<rect x="48" y="24" width="4" height="4" fill="#FFD700" />'    // 10 (Flower center)
+        ];
+
+        // --- Functions ---
+
+        /**
+         * Loads all data from localStorage on page load.
+         */
+        function loadData() {
+            const savedIntentions = localStorage.getItem(INTENTIONS_KEY);
+            const savedPlant = localStorage.getItem(PLANT_KEY);
+            const savedJournal = localStorage.getItem(JOURNAL_KEY);
+
+            if (savedIntentions) {
+                intentions = JSON.parse(savedIntentions);
+            }
+            if (savedPlant) {
+                plantGrowth = parseInt(savedPlant, 10);
+            }
+            if (savedJournal) {
+                reflectionJournal.value = savedJournal;
+            }
+
+            renderIntentions();
+            renderPlant();
+        }
+
+        /**
+         * Saves all current state data to localStorage.
+         */
+        function saveData() {
+            localStorage.setItem(INTENTIONS_KEY, JSON.stringify(intentions));
+            localStorage.setItem(PLANT_KEY, plantGrowth.toString());
+            localStorage.setItem(JOURNAL_KEY, reflectionJournal.value);
+        }
+
+        /**
+         * Clears and re-renders the list of intentions.
+         */
+        function renderIntentions() {
+            intentionsList.innerHTML = '';
+            if (intentions.length === 0) {
+                intentionsList.innerHTML = '<p>No intentions added yet. Be kind to yourself.</p>';
+            }
+
+            intentions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'intention-item';
+                
+                const span = document.createElement('span');
+                span.textContent = item.text;
+
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'controls';
+
+                const growButton = document.createElement('button');
+                growButton.textContent = 'I made time for this today';
+                growButton.className = 'grow-btn';
+                growButton.onclick = () => growPlant();
+
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'x';
+                removeButton.className = 'remove-btn';
+                removeButton.title = 'Remove this intention';
+                removeButton.onclick = () => removeIntention(item.id);
+
+                controlsDiv.appendChild(growButton);
+                controlsDiv.appendChild(removeButton);
+                div.appendChild(span);
+                div.appendChild(controlsDiv);
+                intentionsList.appendChild(div);
+            });
+        }
+
+        /**
+         * Clears and re-renders the plant based on the plantGrowth counter.
+         */
+        function renderPlant() {
+            plantGrowthContainer.innerHTML = '';
+            let svgToAdd = '';
+            for (let i = 0; i < plantGrowth && i < growthStages.length; i++) {
+                svgToAdd += growthStages[i];
+            }
+            plantGrowthContainer.innerHTML = svgToAdd;
+        }
+
+        /**
+         * Increments plant growth, re-renders the plant, and saves.
+         */
+        function growPlant() {
+            // Only grow if there are more stages left
+            if (plantGrowth < growthStages.length) {
+                plantGrowth++;
+                renderPlant();
+                saveData();
+            }
+        }
+
+        /**
+         * Adds a new intention from the input field.
+         */
+        function addIntention() {
+            const text = intentionInput.value.trim();
+            if (text === '') return;
+
+            const newIntention = {
+                id: Date.now(),
+                text: text
+            };
+
+            intentions.push(newIntention);
+            intentionInput.value = '';
+            renderIntentions();
+            saveData();
+        }
+
+        /**
+         * Removes an intention by its ID.
+         */
+        function removeIntention(id) {
+            intentions = intentions.filter(item => item.id !== id);
+            renderIntentions();
+            saveData();
+        }
+
+        // --- Event Listeners ---
+        
+        // Load data when the page is ready
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        // Add intention button click
+        addIntentionBtn.addEventListener('click', addIntention);
+
+        // Add intention on "Enter" key press
+        intentionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addIntention();
+            }
+        });
+
+        // Save journal text as the user types
+        reflectionJournal.addEventListener('input', saveData);
+
+    </script>
+
+</body>
+</html>
