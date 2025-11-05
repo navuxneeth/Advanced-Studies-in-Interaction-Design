@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Studies in Interaction Design - Dual Tracker View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Desktop: Perfect 50/50 horizontal split */
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .split-pane {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .split-pane iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Add a subtle divider between the two panes on desktop */
+        .split-pane:first-child {
+            border-right: 2px solid #333;
+        }
+
+        /* Loading state */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #888;
+            text-align: center;
+        }
+
+        /* Mobile: Button selection view */
+        .mobile-menu {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .split-container {
+                display: none;
+            }
+
+            .mobile-menu {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                width: 100vw;
+                gap: 30px;
+                padding: 20px;
+            }
+
+            .mobile-menu h1 {
+                font-size: 32px;
+                text-align: center;
+                margin-bottom: 20px;
+                color: #f0f0f0;
+            }
+
+            .mobile-menu button {
+                font-family: 'VT323', monospace;
+                font-size: 28px;
+                padding: 20px 40px;
+                background-color: #2a2a2a;
+                color: #f0f0f0;
+                border: 2px solid #444;
+                cursor: pointer;
+                transition: all 0.3s;
+                width: 100%;
+                max-width: 400px;
+            }
+
+            .mobile-menu button:hover,
+            .mobile-menu button:active {
+                background-color: #3a3a3a;
+                border-color: #666;
+                transform: scale(1.05);
+            }
+
+            .mobile-menu button:first-of-type {
+                border-color: #8B4513;
+            }
+
+            .mobile-menu button:first-of-type:hover {
+                background-color: #3A5A40;
+                border-color: #8B4513;
+            }
+
+            .mobile-menu button:last-of-type {
+                border-color: #00FF00;
+            }
+
+            .mobile-menu button:last-of-type:hover {
+                background-color: #1a3a1a;
+                border-color: #00FF00;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Desktop: Split-screen view -->
+    <div class="split-container">
+        <div class="split-pane">
+            <div class="loading">Loading Emotion-Driven Tracker...</div>
+            <iframe 
+                src="./Emotion-Driven-Tracker/index.html" 
+                title="Emotion-Driven Tracker"
+                allow="storage-access"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            ></iframe>
+        </div>
+        <div class="split-pane">
+            <div class="loading">Loading Function-Driven Tracker...</div>
+            <iframe 
+                src="./Function-Driven-Tracker/index.html" 
+                title="Function-Driven Tracker"
+                allow="storage-access"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            ></iframe>
+        </div>
+    </div>
+
+    <!-- Mobile: Button selection menu -->
+    <div class="mobile-menu">
+        <h1>Choose Your Tracker</h1>
+        <button onclick="window.location.href='./Emotion-Driven-Tracker/index.html'">
+            EmotionDriven
+        </button>
+        <button onclick="window.location.href='./Function-Driven-Tracker/index.html'">
+            FunctionDriven
+        </button>
+    </div>
+
+    <script>
+        // Hide loading messages once iframes are loaded (desktop only)
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            iframe.addEventListener('load', () => {
+                const loadingDiv = iframe.previousElementSibling;
+                if (loadingDiv && loadingDiv.classList.contains('loading')) {
+                    loadingDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
