@@ -68,13 +68,13 @@
         /* --- Forms & Inputs --- */
         .intention-form {
             display: flex;
-            flex-direction: column; /* <-- UPDATED */
+            flex-direction: column; 
             gap: 10px;
             margin-bottom: 20px;
         }
 
         #intention-input,
-        #why-input { /* <-- NEW */
+        #why-input { 
             width: 100%;
             font-family: 'VT323', monospace;
             font-size: 22px;
@@ -103,8 +103,8 @@
         /* --- Intentions List --- */
         .intention-item {
             display: flex;
-            flex-direction: column; /* <-- UPDATED */
-            align-items: flex-start; /* <-- UPDATED */
+            flex-direction: column; 
+            align-items: flex-start; 
             padding: 12px 0;
             border-bottom: 2px dashed #D2B48C;
         }
@@ -116,7 +116,6 @@
             font-size: 24px;
         }
 
-        /* --- NEW STYLES --- */
         .intention-why {
             font-size: 20px;
             color: #5a5a40;
@@ -131,17 +130,17 @@
             flex-shrink: 0;
             gap: 10px;
             width: 100%;
-            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+            flex-wrap: wrap; 
         }
 
         .intention-item .grow-btn {
             background-color: #8B4513; /* Brown */
             font-size: 18px;
             padding: 5px 10px;
-            flex-grow: 1; /* Make buttons take up space */
+            flex-grow: 1; 
         }
         
-        .intention-item .missed-btn { /* <-- NEW */
+        .intention-item .missed-btn { 
             background-color: #A0522D; /* Lighter Brown */
             font-size: 18px;
             padding: 5px 10px;
@@ -149,11 +148,11 @@
         }
 
         .intention-item .remove-btn {
-            background-color: #c09a7b; /* Even Lighter Brown */
+            background-color: #c09a7b; 
             color: #3A5A40;
             font-size: 18px;
             padding: 5px 12px;
-            margin-left: auto; /* Pushes remove button to the right */
+            margin-left: auto; 
         }
         
         .log-container {
@@ -226,8 +225,6 @@
         .mood-btn:hover {
             transform: scale(1.2);
         }
-        /* --- END NEW --- */
-
 
         /* --- Journal Text Area --- */
         #reflection-journal {
@@ -294,15 +291,15 @@
     <script>
         // --- DOM Selectors ---
         const intentionInput = document.getElementById('intention-input');
-        const whyInput = document.getElementById('why-input'); // <-- NEW
+        const whyInput = document.getElementById('why-input'); 
         const addIntentionBtn = document.getElementById('add-intention-btn');
         const intentionsList = document.getElementById('intentions-list');
         const plantGrowthContainer = document.getElementById('plant-growth');
         const reflectionJournal = document.getElementById('reflection-journal');
-        const moodModal = document.getElementById('mood-modal'); // <-- NEW
-        const modalIntentionId = document.getElementById('modal-intention-id'); // <-- NEW
-        const insightsContainer = document.getElementById('insights-container'); // <-- NEW
-        const insightsText = document.getElementById('insights-text'); // <-- NEW
+        const moodModal = document.getElementById('mood-modal'); 
+        const modalIntentionId = document.getElementById('modal-intention-id'); 
+        const insightsContainer = document.getElementById('insights-container'); 
+        const insightsText = document.getElementById('insights-text'); 
 
         // --- State Variables ---
         let intentions = [];
@@ -331,6 +328,9 @@
 
         /**
          * Loads all data from localStorage on page load.
+         * --- MODIFIED ---
+         * This now adds empty 'moods' and 'missedDays' arrays to the
+         * loaded intentions, ensuring logs are fresh on every load.
          */
         function loadData() {
             const savedIntentions = localStorage.getItem(INTENTIONS_KEY);
@@ -338,7 +338,17 @@
             const savedJournal = localStorage.getItem(JOURNAL_KEY);
 
             if (savedIntentions) {
-                intentions = JSON.parse(savedIntentions);
+                const loadedIntentions = JSON.parse(savedIntentions);
+                // Re-hydrate the intentions, adding back the transient (non-saved) properties
+                intentions = loadedIntentions.map(item => {
+                    return {
+                        id: item.id,
+                        text: item.text,
+                        why: item.why,
+                        moods: [], // <-- Initialize as empty
+                        missedDays: [] // <-- Initialize as empty
+                    };
+                });
             }
             if (savedPlant) {
                 plantGrowth = parseInt(savedPlant, 10);
@@ -349,14 +359,27 @@
 
             renderIntentions();
             renderPlant();
-            renderInsights(); // <-- NEW
+            renderInsights(); 
         }
 
         /**
          * Saves all current state data to localStorage.
+         * --- MODIFIED ---
+         * This now saves a "clean" version of intentions,
+         * stripping out 'moods' and 'missedDays' before saving.
          */
         function saveData() {
-            localStorage.setItem(INTENTIONS_KEY, JSON.stringify(intentions));
+            // Create a "clean" version for saving, omitting transient data
+            const intentionsToSave = intentions.map(item => {
+                return {
+                    id: item.id,
+                    text: item.text,
+                    why: item.why
+                    // 'moods' and 'missedDays' are intentionally not saved
+                };
+            });
+            
+            localStorage.setItem(INTENTIONS_KEY, JSON.stringify(intentionsToSave));
             localStorage.setItem(PLANT_KEY, plantGrowth.toString());
             localStorage.setItem(JOURNAL_KEY, reflectionJournal.value);
         }
@@ -368,7 +391,7 @@
             intentionsList.innerHTML = '';
             if (intentions.length === 0) {
                 intentionsList.innerHTML = '<p>No intentions added yet. Be kind to yourself.</p>';
-                return; // <-- Stop here if no intentions
+                return; 
             }
 
             intentions.forEach(item => {
@@ -379,14 +402,12 @@
                 span.textContent = item.text;
                 div.appendChild(span);
 
-                // --- NEW: Render "Why" ---
                 if (item.why) {
                     const whyEl = document.createElement('p');
                     whyEl.className = 'intention-why';
                     whyEl.textContent = `Why: ${item.why}`;
                     div.appendChild(whyEl);
                 }
-                // --- END NEW ---
 
                 const controlsDiv = document.createElement('div');
                 controlsDiv.className = 'controls';
@@ -394,14 +415,12 @@
                 const growButton = document.createElement('button');
                 growButton.textContent = 'I made time for this today';
                 growButton.className = 'grow-btn';
-                growButton.onclick = () => showMoodModal(item.id); // <-- UPDATED
+                growButton.onclick = () => handleGrowClick(item.id); 
 
-                // --- NEW: Missed Button ---
                 const missedButton = document.createElement('button');
                 missedButton.textContent = 'Missed today';
                 missedButton.className = 'missed-btn';
                 missedButton.onclick = () => handleMissedDay(item.id);
-                // --- END NEW ---
 
                 const removeButton = document.createElement('button');
                 removeButton.textContent = 'x';
@@ -410,11 +429,11 @@
                 removeButton.onclick = () => removeIntention(item.id);
 
                 controlsDiv.appendChild(growButton);
-                controlsDiv.appendChild(missedButton); // <-- NEW
+                controlsDiv.appendChild(missedButton); 
                 controlsDiv.appendChild(removeButton);
                 div.appendChild(controlsDiv);
 
-                // --- NEW: Render Logs ---
+                // This section now only renders logs from the CURRENT session
                 if ((item.moods && item.moods.length > 0) || (item.missedDays && item.missedDays.length > 0)) {
                     const logContainer = document.createElement('div');
                     logContainer.className = 'log-container';
@@ -435,14 +454,13 @@
                     }
                     div.appendChild(logContainer);
                 }
-                // --- END NEW ---
                 
                 intentionsList.appendChild(div);
             });
         }
         
         /**
-         * NEW: Renders the insights panel based on all moods.
+         * Renders the insights panel based on all moods.
          */
         function renderInsights() {
             const allMoods = intentions.flatMap(i => i.moods || []).map(m => m.mood);
@@ -482,7 +500,7 @@
             if (plantGrowth < growthStages.length) {
                 plantGrowth++;
                 renderPlant();
-                // Note: saveData() is called by the function that *calls* growPlant()
+                saveData(); // This saves the new plantGrowth value
             }
         }
 
@@ -491,23 +509,23 @@
          */
         function addIntention() {
             const text = intentionInput.value.trim();
-            const whyText = whyInput.value.trim(); // <-- NEW
+            const whyText = whyInput.value.trim(); 
             if (text === '') return;
 
             const newIntention = {
                 id: Date.now(),
                 text: text,
-                why: whyText, // <-- NEW
-                moods: [], // <-- NEW
-                missedDays: [] // <-- NEW
+                why: whyText, 
+                moods: [], // Initialized as empty
+                missedDays: [] // Initialized as empty
             };
 
             intentions.push(newIntention);
             intentionInput.value = '';
-            whyInput.value = ''; // <-- NEW
+            whyInput.value = ''; 
             
             renderIntentions();
-            saveData();
+            saveData(); // Saves the new intention (without logs)
         }
 
         /**
@@ -516,11 +534,17 @@
         function removeIntention(id) {
             intentions = intentions.filter(item => item.id !== id);
             renderIntentions();
-            renderInsights(); // <-- NEW (in case moods were removed)
-            saveData();
+            renderInsights(); 
+            saveData(); // Saves the updated intentions list
         }
         
-        // --- NEW FUNCTIONS ---
+        /**
+         * Handles the "I made time for this" click.
+         */
+        function handleGrowClick(id) {
+            growPlant(); // Grow and save plant state immediately
+            showMoodModal(id); // Then, ask for the mood
+        }
 
         /**
          * Shows the mood tracking modal.
@@ -542,7 +566,7 @@
             const intention = intentions.find(item => item.id == id);
             if (!intention) return;
             
-            if (!intention.moods) {
+            if (!intention.moods) { // This check is still good practice
                 intention.moods = [];
             }
             
@@ -551,12 +575,11 @@
                 mood: mood
             });
             
-            growPlant(); // Grow plant *after* logging mood
-            
+            modalIntentionId.value = ''; // Clear the hidden input
             moodModal.style.display = 'none';
             renderIntentions();
             renderInsights();
-            saveData();
+            // We DON'T call saveData() here, because we don't want to save the mood.
         }
 
         /**
@@ -569,7 +592,7 @@
             const intention = intentions.find(item => item.id == id);
             if (!intention) return;
             
-            if (!intention.missedDays) {
+            if (!intention.missedDays) { // Good practice
                 intention.missedDays = [];
             }
             
@@ -578,21 +601,15 @@
                 note: reason || "No note."
             });
             
-            // Note: We DO NOT call growPlant()
-            
             renderIntentions();
-            saveData();
+            // We DON'T call saveData() here, because we don't want to save the note.
         }
 
         // --- Event Listeners ---
         
-        // Load data when the page is ready
         document.addEventListener('DOMContentLoaded', loadData);
-
-        // Add intention button click
         addIntentionBtn.addEventListener('click', addIntention);
 
-        // Add intention on "Enter" key press (in either input)
         intentionInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 addIntention();
@@ -604,16 +621,14 @@
             }
         });
 
-        // Save journal text as the user types
+        // Journal saves on its own
         reflectionJournal.addEventListener('input', saveData);
 
-        // --- NEW MODAL LISTENERS ---
+        // Mood modal listeners
         moodModal.addEventListener('click', (e) => {
-            // Click on a mood button
             if (e.target.matches('.mood-btn')) {
                 handleMoodSelection(e);
             }
-            // Click on overlay to close
             if (e.target.matches('.modal-overlay')) {
                 moodModal.style.display = 'none';
             }
