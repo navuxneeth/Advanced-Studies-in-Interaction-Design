@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Studies in Interaction Design - Dual Tracker View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Desktop: Perfect 50/50 horizontal split */
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .split-pane {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .split-pane iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Add a subtle divider between the two panes on desktop */
+        .split-pane:first-child {
+            border-right: 2px solid #333;
+        }
+
+        /* Mobile: Vertical stacking (split after scrolling down) */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            .split-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .split-pane {
+                height: 100vh;
+                width: 100vw;
+            }
+
+            .split-pane:first-child {
+                border-right: none;
+                border-bottom: 2px solid #333;
+            }
+        }
+
+        /* Loading state */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="split-container">
+        <div class="split-pane">
+            <div class="loading">Loading Emotion-Driven Tracker...</div>
+            <iframe 
+                src="./Emotion-Driven-Tracker/index.html" 
+                title="Emotion-Driven Tracker"
+                allow="storage-access"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            ></iframe>
+        </div>
+        <div class="split-pane">
+            <div class="loading">Loading Function-Driven Tracker...</div>
+            <iframe 
+                src="./Function-Driven-Tracker/index.html" 
+                title="Function-Driven Tracker"
+                allow="storage-access"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            ></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Hide loading messages once iframes are loaded
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            iframe.addEventListener('load', () => {
+                const loadingDiv = iframe.previousElementSibling;
+                if (loadingDiv && loadingDiv.classList.contains('loading')) {
+                    loadingDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
