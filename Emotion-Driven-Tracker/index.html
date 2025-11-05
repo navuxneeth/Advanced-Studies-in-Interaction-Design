@@ -68,12 +68,14 @@
         /* --- Forms & Inputs --- */
         .intention-form {
             display: flex;
+            flex-direction: column; /* <-- UPDATED */
             gap: 10px;
             margin-bottom: 20px;
         }
 
-        #intention-input {
-            flex-grow: 1;
+        #intention-input,
+        #why-input { /* <-- NEW */
+            width: 100%;
             font-family: 'VT323', monospace;
             font-size: 22px;
             padding: 10px;
@@ -101,8 +103,8 @@
         /* --- Intentions List --- */
         .intention-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column; /* <-- UPDATED */
+            align-items: flex-start; /* <-- UPDATED */
             padding: 12px 0;
             border-bottom: 2px dashed #D2B48C;
         }
@@ -110,25 +112,122 @@
         .intention-item span {
             padding-right: 15px;
             word-break: break-word;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        /* --- NEW STYLES --- */
+        .intention-why {
+            font-size: 20px;
+            color: #5a5a40;
+            margin: 5px 0 15px 0;
+            padding-right: 15px;
+            word-break: break-word;
+            font-style: italic;
         }
 
         .intention-item .controls {
             display: flex;
             flex-shrink: 0;
             gap: 10px;
+            width: 100%;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
         }
 
         .intention-item .grow-btn {
             background-color: #8B4513; /* Brown */
             font-size: 18px;
             padding: 5px 10px;
+            flex-grow: 1; /* Make buttons take up space */
+        }
+        
+        .intention-item .missed-btn { /* <-- NEW */
+            background-color: #A0522D; /* Lighter Brown */
+            font-size: 18px;
+            padding: 5px 10px;
+            flex-grow: 1;
         }
 
         .intention-item .remove-btn {
-            background-color: #A0522D; /* Lighter Brown */
+            background-color: #c09a7b; /* Even Lighter Brown */
+            color: #3A5A40;
             font-size: 18px;
             padding: 5px 12px;
+            margin-left: auto; /* Pushes remove button to the right */
         }
+        
+        .log-container {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #F5EFE6;
+            border: 1px dashed #D2B48C;
+        }
+        
+        .log-container p {
+            font-size: 18px;
+            text-align: left;
+            margin: 5px 0;
+            color: #5a5a40;
+        }
+
+        #insights-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #FDFBF5;
+            border: 2px solid #8B4513;
+        }
+        
+        #insights-container h2 {
+            margin-top: 0;
+        }
+
+        /* --- NEW MODAL STYLES --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: #FDFBF5;
+            padding: 30px;
+            border: 2px solid #8B4513;
+            text-align: center;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+        }
+        
+        .mood-options {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .mood-btn {
+            font-size: 48px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            color: #3A5A40;
+            transition: transform 0.2s;
+        }
+        
+        .mood-btn:hover {
+            transform: scale(1.2);
+        }
+        /* --- END NEW --- */
+
 
         /* --- Journal Text Area --- */
         #reflection-journal {
@@ -162,24 +261,48 @@
 
         <div class="intention-form">
             <input type="text" id="intention-input" placeholder="A new intention...">
+            <input type="text" id="why-input" placeholder="Why does this matter to you?">
             <button id="add-intention-btn">Add an Intention</button>
         </div>
 
         <div id="intentions-list">
             </div>
 
+        <div id="insights-container" style="display: none;">
+            <h2>Insights</h2>
+            <p id="insights-text"></p>
+        </div>
+
         <h2>Daily Reflection</h2>
         <textarea id="reflection-journal" placeholder="How do you feel today? What's on your mind?"></textarea>
 
     </div>
 
+    <div id="mood-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>How did it feel?</h2>
+            <div class="mood-options">
+                <button class="mood-btn" data-mood="😊">😊</button>
+                <button class="mood-btn" data-mood="😐">😐</button>
+                <button class="mood-btn" data-mood="😫">😫</button>
+            </div>
+            <input type="hidden" id="modal-intention-id">
+        </div>
+    </div>
+
+
     <script>
         // --- DOM Selectors ---
         const intentionInput = document.getElementById('intention-input');
+        const whyInput = document.getElementById('why-input'); // <-- NEW
         const addIntentionBtn = document.getElementById('add-intention-btn');
         const intentionsList = document.getElementById('intentions-list');
         const plantGrowthContainer = document.getElementById('plant-growth');
         const reflectionJournal = document.getElementById('reflection-journal');
+        const moodModal = document.getElementById('mood-modal'); // <-- NEW
+        const modalIntentionId = document.getElementById('modal-intention-id'); // <-- NEW
+        const insightsContainer = document.getElementById('insights-container'); // <-- NEW
+        const insightsText = document.getElementById('insights-text'); // <-- NEW
 
         // --- State Variables ---
         let intentions = [];
@@ -191,8 +314,6 @@
         const JOURNAL_KEY = 'growthJournalReflection';
 
         // --- Pixel Art Definitions for Growth ---
-        // Each item is an SVG string for a <rect> element (a leaf or branch)
-        // This array defines the sequence of growth.
         const growthStages = [
             '<rect x="52" y="72" width="12" height="4" fill="#3A5A40" />', // 1
             '<rect x="36" y="66" width="12" height="4" fill="#3A5A40" />', // 2
@@ -228,6 +349,7 @@
 
             renderIntentions();
             renderPlant();
+            renderInsights(); // <-- NEW
         }
 
         /**
@@ -246,6 +368,7 @@
             intentionsList.innerHTML = '';
             if (intentions.length === 0) {
                 intentionsList.innerHTML = '<p>No intentions added yet. Be kind to yourself.</p>';
+                return; // <-- Stop here if no intentions
             }
 
             intentions.forEach(item => {
@@ -254,6 +377,16 @@
                 
                 const span = document.createElement('span');
                 span.textContent = item.text;
+                div.appendChild(span);
+
+                // --- NEW: Render "Why" ---
+                if (item.why) {
+                    const whyEl = document.createElement('p');
+                    whyEl.className = 'intention-why';
+                    whyEl.textContent = `Why: ${item.why}`;
+                    div.appendChild(whyEl);
+                }
+                // --- END NEW ---
 
                 const controlsDiv = document.createElement('div');
                 controlsDiv.className = 'controls';
@@ -261,7 +394,14 @@
                 const growButton = document.createElement('button');
                 growButton.textContent = 'I made time for this today';
                 growButton.className = 'grow-btn';
-                growButton.onclick = () => growPlant();
+                growButton.onclick = () => showMoodModal(item.id); // <-- UPDATED
+
+                // --- NEW: Missed Button ---
+                const missedButton = document.createElement('button');
+                missedButton.textContent = 'Missed today';
+                missedButton.className = 'missed-btn';
+                missedButton.onclick = () => handleMissedDay(item.id);
+                // --- END NEW ---
 
                 const removeButton = document.createElement('button');
                 removeButton.textContent = 'x';
@@ -270,11 +410,56 @@
                 removeButton.onclick = () => removeIntention(item.id);
 
                 controlsDiv.appendChild(growButton);
+                controlsDiv.appendChild(missedButton); // <-- NEW
                 controlsDiv.appendChild(removeButton);
-                div.appendChild(span);
                 div.appendChild(controlsDiv);
+
+                // --- NEW: Render Logs ---
+                if ((item.moods && item.moods.length > 0) || (item.missedDays && item.missedDays.length > 0)) {
+                    const logContainer = document.createElement('div');
+                    logContainer.className = 'log-container';
+
+                    if (item.moods) {
+                        item.moods.forEach(log => {
+                            const p = document.createElement('p');
+                            p.textContent = `Felt ${log.mood} on ${log.date}`;
+                            logContainer.appendChild(p);
+                        });
+                    }
+                    if (item.missedDays) {
+                        item.missedDays.forEach(log => {
+                            const p = document.createElement('p');
+                            p.textContent = `Missed on ${log.date}: "${log.note}"`;
+                            logContainer.appendChild(p);
+                        });
+                    }
+                    div.appendChild(logContainer);
+                }
+                // --- END NEW ---
+                
                 intentionsList.appendChild(div);
             });
+        }
+        
+        /**
+         * NEW: Renders the insights panel based on all moods.
+         */
+        function renderInsights() {
+            const allMoods = intentions.flatMap(i => i.moods || []).map(m => m.mood);
+            if (allMoods.length === 0) {
+                insightsContainer.style.display = 'none';
+                return;
+            }
+
+            const moodCounts = allMoods.reduce((acc, mood) => {
+                acc[mood] = (acc[mood] || 0) + 1;
+                return acc;
+            }, {});
+
+            const mostCommonMood = Object.keys(moodCounts).reduce((a, b) => moodCounts[a] > moodCounts[b] ? a : b);
+            
+            insightsText.textContent = `Your most common feeling after completing an intention is: ${mostCommonMood}`;
+            insightsContainer.style.display = 'block';
         }
 
         /**
@@ -297,7 +482,7 @@
             if (plantGrowth < growthStages.length) {
                 plantGrowth++;
                 renderPlant();
-                saveData();
+                // Note: saveData() is called by the function that *calls* growPlant()
             }
         }
 
@@ -306,15 +491,21 @@
          */
         function addIntention() {
             const text = intentionInput.value.trim();
+            const whyText = whyInput.value.trim(); // <-- NEW
             if (text === '') return;
 
             const newIntention = {
                 id: Date.now(),
-                text: text
+                text: text,
+                why: whyText, // <-- NEW
+                moods: [], // <-- NEW
+                missedDays: [] // <-- NEW
             };
 
             intentions.push(newIntention);
             intentionInput.value = '';
+            whyInput.value = ''; // <-- NEW
+            
             renderIntentions();
             saveData();
         }
@@ -324,6 +515,71 @@
          */
         function removeIntention(id) {
             intentions = intentions.filter(item => item.id !== id);
+            renderIntentions();
+            renderInsights(); // <-- NEW (in case moods were removed)
+            saveData();
+        }
+        
+        // --- NEW FUNCTIONS ---
+
+        /**
+         * Shows the mood tracking modal.
+         */
+        function showMoodModal(id) {
+            modalIntentionId.value = id;
+            moodModal.style.display = 'flex';
+        }
+
+        /**
+         * Handles the click on a mood button.
+         */
+        function handleMoodSelection(e) {
+            if (!e.target.matches('.mood-btn')) return;
+
+            const mood = e.target.dataset.mood;
+            const id = modalIntentionId.value;
+            
+            const intention = intentions.find(item => item.id == id);
+            if (!intention) return;
+            
+            if (!intention.moods) {
+                intention.moods = [];
+            }
+            
+            intention.moods.push({
+                date: new Date().toLocaleDateString(),
+                mood: mood
+            });
+            
+            growPlant(); // Grow plant *after* logging mood
+            
+            moodModal.style.display = 'none';
+            renderIntentions();
+            renderInsights();
+            saveData();
+        }
+
+        /**
+         * Handles a missed day.
+         */
+        function handleMissedDay(id) {
+            const reason = prompt("That's okay. What was today like?");
+            if (reason === null) return; // User clicked cancel
+
+            const intention = intentions.find(item => item.id == id);
+            if (!intention) return;
+            
+            if (!intention.missedDays) {
+                intention.missedDays = [];
+            }
+            
+            intention.missedDays.push({
+                date: new Date().toLocaleDateString(),
+                note: reason || "No note."
+            });
+            
+            // Note: We DO NOT call growPlant()
+            
             renderIntentions();
             saveData();
         }
@@ -336,8 +592,13 @@
         // Add intention button click
         addIntentionBtn.addEventListener('click', addIntention);
 
-        // Add intention on "Enter" key press
+        // Add intention on "Enter" key press (in either input)
         intentionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addIntention();
+            }
+        });
+        whyInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 addIntention();
             }
@@ -345,6 +606,18 @@
 
         // Save journal text as the user types
         reflectionJournal.addEventListener('input', saveData);
+
+        // --- NEW MODAL LISTENERS ---
+        moodModal.addEventListener('click', (e) => {
+            // Click on a mood button
+            if (e.target.matches('.mood-btn')) {
+                handleMoodSelection(e);
+            }
+            // Click on overlay to close
+            if (e.target.matches('.modal-overlay')) {
+                moodModal.style.display = 'none';
+            }
+        });
 
     </script>
 

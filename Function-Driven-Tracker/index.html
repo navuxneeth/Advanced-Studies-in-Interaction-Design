@@ -93,6 +93,7 @@
             grid-template-areas:
                 "name streak"
                 "grid grid"
+                "stats stats" /* <-- NEW AREA FOR STATS */
                 "failure failure";
             grid-template-columns: 1fr auto;
             gap: 15px;
@@ -118,6 +119,18 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 10px;
         }
+        
+        /* --- NEW --- */
+        .success-rate {
+            grid-area: stats;
+            font-size: 1.5rem;
+            text-align: left;
+            margin-top: 10px;
+            border-top: 2px dashed var(--color-green);
+            padding-top: 10px;
+        }
+        /* --- END NEW --- */
+
 
         .failure-message {
             grid-area: failure;
@@ -186,7 +199,7 @@
         <h1>[ SCOREBOARD: COMPLIANCE ]</h1>
 
         <div class="input-area">
-            <input type="text" id="habit-input" placeholder="DEFINE NEW HABIT...">
+            <input type="text" id="habit-input" placeholder="DEFINE NEW HABIT (7-DAY GOAL)...">
             <button id="add-habit-btn">ADD</button>
         </div>
 
@@ -265,7 +278,17 @@
                     }
                     habitItem.appendChild(weekGrid);
 
-                    // 5. Create failure message
+                    // 5. *** NEW: Create Success Rate ***
+                    const successRate = document.createElement('div');
+                    successRate.className = 'success-rate';
+                    const successfulDays = habit.checks.filter(c => c === true).length;
+                    const rate = (successfulDays / 7) * 100;
+                    successRate.textContent = `SUCCESS RATE: ${rate.toFixed(0)}%`;
+                    habitItem.appendChild(successRate);
+                    // *** END NEW ***
+
+
+                    // 6. Create failure message
                     const failureMessage = document.createElement('div');
                     failureMessage.className = 'failure-message';
                     failureMessage.textContent = 'STREAK BROKEN';
@@ -276,7 +299,7 @@
                     }
                     habitItem.appendChild(failureMessage);
 
-                    // 6. Add the complete item to the list
+                    // 7. Add the complete item to the list
                     habitList.appendChild(habitItem);
                 });
             }
